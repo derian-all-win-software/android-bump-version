@@ -1,4 +1,4 @@
-name: build-and-release
+name: bump-app-version
 
 on:
   workflow_dispatch:
@@ -13,10 +13,10 @@ on:
         default: minor
 
 jobs:
-  build-and-release:
+  bump-app-version:
     runs-on: ubuntu-latest
     env:
-      GRADLE_PROPERTIES_FILE: ${{ vars.GRADLE_PROPERTIES_FILE || 'gradle.properties' }}
+      GRADLE_FILE: ${{ vars.GRADLE_FILE || 'gradle.properties' }}
       GRADLE_VERSION_KEY: ${{ vars.GRADLE_VERSION_KEY || 'appVersionName' }}
 
     steps:
@@ -24,11 +24,10 @@ jobs:
 
       - name: Get current version
         id: version-app
-        run: |
-          set -eou pipefail
-
-          version_name=$(cat "$GRADLE_PROPERTIES_FILE" | grep "$GRADLE_VERSION_KEY")
-          echo "version_name=$version_name" >> $GITHUB_OUTPUT
+        uses: ./.github/actions/app-version
+        with:
+          GRADLE_FILE: ${{ env.GRADLE_FILE }}
+          GRADLE_VERSION_KEY: ${{ env.GRADLE_VERSION_KEY }}
 
       - name: Bump version app
         id: bump-version
@@ -62,15 +61,15 @@ jobs:
 
           echo "new_version_app=$new_version_app" >> $GITHUB_OUTPUT
 
-      - name: Update the ${{ env.GRADLE_PROPERTIES_FILE }} file
+      - name: Update the ${{ env.GRADLE_FILE }} file
         if: ${{ steps.bump-version.outputs.new_version_app }}
         env:
           NEW_VERSION_APP: ${{ steps.bump-version.outputs.new_version_app }}
         run: |
           set -eou pipefail
 
-          gradle_result=$(cat "$GRADLE_PROPERTIES_FILE" | sed "s/$GRADLE_VERSION_KEY=.*/$GRADLE_VERSION_KEY=$NEW_VERSION_APP./")
-          echo "$gradle_result" > "$GRADLE_PROPERTIES_FILE"
+          gradle_result=$(cat "$GRADLE_FILE" | sed "s/$GRADLE_VERSION_KEY=.*/$GRADLE_VERSION_KEY=$NEW_VERSION_APP./")
+          echo "$gradle_result" > "$GRADLE_FILE"
           echo "Version updated: $NEW_VERSION_APP"
 
       - name: Commit new version app
@@ -81,7 +80,7 @@ jobs:
         run: |
           set -eou pipefail
 
-          commit_message="Bump version $NEW_VERSION_APP"
+          commit_message="chore: bump version $NEW_VERSION_APP"
           commit_command="git commit -m '$commit_message'"
 
           bump_branch_name="bump-version/$NEW_VERSION_APP"
@@ -109,7 +108,7 @@ jobs:
         with:
           github-token: ${{ secrets.TOKEN }}
           script: |
-            const prTitle = 'chore: bump app version (${{ env.NEW_VERSION_APP }})';
+            const prTitle = 'chore: bump app version';
             const prBody = '> This PR was created by **${{ github.workflow }}** workflow.';
 
             const resp = await github.rest.pulls.create({

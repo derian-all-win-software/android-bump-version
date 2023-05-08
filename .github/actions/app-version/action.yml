@@ -1,0 +1,29 @@
+name: App version
+description: Get the current app version
+
+inputs:
+  gradle_file:
+    description: Gradle file
+    required: true
+  gradle_version_key:
+    description: Gradle version key file
+
+outputs:
+  version_name:
+    description: Version name from the Gradle file
+    value: ${{ steps.version-app.outputs.version_name }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get current version
+      id: version-app
+      shell: bash
+      env:
+        GRADLE_FILE: ${{ inputs.gradle_file }}
+        GRADLE_VERSION_KEY: ${{ inputs.gradle_version_key || 'appVersionName' }}
+      run: |
+        set -eou pipefail
+
+        version_name=$(cat "$GRADLE_FILE" | grep "$GRADLE_VERSION_KEY")
+        echo "version_name=$version_name" >> $GITHUB_OUTPUT
