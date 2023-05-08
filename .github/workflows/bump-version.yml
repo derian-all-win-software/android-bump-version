@@ -1,0 +1,96 @@
+name: build-and-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: Bump Type
+        type: choice
+        options: 
+          - major
+          - minor
+          - patch
+        default: minor
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_PROPERTIES_FILE: ${{ vars.GRADLE_PROPERTIES_FILE || 'gradle.properties' }}
+      GRADLE_VERSION_KEY: ${{ vars.GRADLE_VERSION_KEY || 'appVersionName' }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get current version
+        id: version-app
+        run: |
+          set -eou pipefail
+
+          version_name=$(cat "$GRADLE_PROPERTIES_FILE" | grep "$GRADLE_VERSION_KEY")
+          echo "version_name=$version_name" >> $GITHUB_OUTPUT
+
+      - name: Bump version app
+        id: bump-version
+        if: ${{ steps.version-app.outputs.version_name }}
+        env:
+          VERSION_NAME: ${{ steps.version-app.outputs.version_name }}
+        run: |
+          set -eou pipefail
+
+          if [[ ! "$VERSION_NAME" =~ (0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){1,2} ]]; then
+              echo "Invalid version: $version_name."
+              exit 1
+          fi
+
+          array_version=(${BASH_REMATCH[0]//./ })
+          case "$BUMP_TYPE" in
+              major)
+                  let major=array_version[0]+1
+                  new_version_app="$major.0.0"
+              ;;
+              minor)
+                  let minor=array_version[1]+1
+                  new_version_app="${array_version[0]}.$minor.0"
+              ;;
+              patch)
+                  let patch=array_version[2]+1
+                  new_version_app="${array_version[0]}.${array_version[1]}.$patch"
+              ;;
+          esac
+
+          echo "new_version_app=$new_version_app" >> $GITHUB_OUTPUT
+
+      - name: Update the ${{ env.GRADLE_PROPERTIES_FILE }} file
+        if: ${{ steps.bump-version.outputs.new_version_app }}
+        env:
+          NEW_VERSION_APP: ${{ steps.bump-version.outputs.new_version_app }}
+        run: |
+          set -eou pipefail
+
+          gradle_result=$(cat "$GRADLE_PROPERTIES_FILE" | sed "s/$GRADLE_VERSION_KEY=.*/$GRADLE_VERSION_KEY=$NEW_VERSION_APP./")
+          echo "$gradle_result" > "$GRADLE_PROPERTIES_FILE"
+          echo "Version updated: $NEW_VERSION_APP"
+
+      - name: Commit new version app
+        if: ${{ steps.bump-version.outputs.new_version_app }}
+        env:
+          NEW_VERSION_APP: ${{ steps.bump-version.outputs.new_version_app }}
+        run: |
+          set -eou pipefail
+
+          commit_message="Bump version $NEW_VERSION_APP"
+          commit_command="git commit -m '$commit_message'"
+
+          branch_name="release/${NEW_VERSION_APP}-RC"
+          git switch -c "$branch_name"
+          git add .
+
+          if [[ ! -z "$GITHUB_ACTIONS" ]]; then
+            git_author="github-actions <github-actions[bot]@users.noreply.github.com>"
+            commit_command+=" --author='$git_author'"
+          fi
+
+          eval "$commit_command"
+          git push origin "$branch_name" --force
+
