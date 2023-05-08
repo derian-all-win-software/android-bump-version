@@ -26,12 +26,12 @@ jobs:
       - name: Trigger app release build
         env:
           GIT_BRANCH: ${{ github.ref_name }}
-          VERSION: ${{ steps.version-app.outputs.version_name }}
+          VERSION_NAME: ${{ steps.version-app.outputs.version_name }}
         run: |
           set -eou pipefail
 
           current_branch=${GIT_BRANCH:-$(git branch --show-current)}
-          branch_name="release/$VERSION-RC"
+          branch_name="release/$VERSION_NAME-RC"
           remote_branch=$(git ls-remote --heads origin "$branch_name")
           
           if [[ ! -z "$remote_branch" ]]; then
@@ -40,6 +40,6 @@ jobs:
           fi
           
           echo "git checkout -b $branch_name"
-          echo "git push origin $branch_name:$branch_name --tags"
+          echo "git push origin $branch_name --tags"
           echo "git checkout $current_branch"
           echo "Successfully pushed to remote."

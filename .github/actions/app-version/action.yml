@@ -26,4 +26,8 @@ runs:
         set -eou pipefail
 
         version_name=$(cat "$GRADLE_FILE" | grep "$GRADLE_VERSION_KEY")
-        echo "version_name=$version_name" >> $GITHUB_OUTPUT
+        if [[ ! "$version_name" =~ (0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)){1,2} ]]; then
+            echo "Invalid version: $version_name."
+            exit 1
+        fi
+        echo "version_name=${BASH_REMATCH[0]}" >> $GITHUB_OUTPUT
