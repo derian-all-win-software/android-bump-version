@@ -90,6 +90,9 @@ jobs:
           if [[ ! -z "$GITHUB_ACTIONS" ]]; then
             git_author="github-actions <github-actions[bot]@users.noreply.github.com>"
             commit_command+=" --author='$git_author'"
+            
+            git config user.name 'github-actions[bot]'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
           fi
 
           eval "$commit_command"
