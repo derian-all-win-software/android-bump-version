@@ -107,8 +107,9 @@ jobs:
           BUMP_BRANCH_VERSION: ${{ steps.commit-version-app.outputs.bump_branch_name }}
         uses: actions/github-script@v6
         with:
-          script:  |
-            const prTitle = 'chore: bump app version';
+          github-token: ${{ secrets.TOKEN }}
+          script: |
+            const prTitle = 'chore: bump app version (${{ env.NEW_VERSION_APP }})';
             const prBody = '> This PR was created by **${{ github.workflow }}** workflow.';
 
             const resp = await github.rest.pulls.create({
