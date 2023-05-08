@@ -35,6 +35,7 @@ jobs:
         if: ${{ steps.version-app.outputs.version_name }}
         env:
           VERSION_NAME: ${{ steps.version-app.outputs.version_name }}
+          BUMP_TYPE: ${{ github.event.inputs.bump_type }}
         run: |
           set -eou pipefail
 
