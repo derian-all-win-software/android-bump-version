@@ -39,7 +39,7 @@ jobs:
             exit 0
           fi
           
-          echo "git checkout -b $branch_name"
-          echo "git push origin $branch_name --tags"
-          echo "git checkout $current_branch"
+          git checkout -b $branch_name
+          git push origin $branch_name --tags
+          git checkout $current_branch
           echo "Successfully pushed to remote."
