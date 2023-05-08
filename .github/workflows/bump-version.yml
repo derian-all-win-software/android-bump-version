@@ -74,6 +74,7 @@ jobs:
           echo "Version updated: $NEW_VERSION_APP"
 
       - name: Commit new version app
+        id: commit-version-app
         if: ${{ steps.bump-version.outputs.new_version_app }}
         env:
           NEW_VERSION_APP: ${{ steps.bump-version.outputs.new_version_app }}
@@ -83,8 +84,9 @@ jobs:
           commit_message="Bump version $NEW_VERSION_APP"
           commit_command="git commit -m '$commit_message'"
 
-          branch_name="release/${NEW_VERSION_APP}-RC"
-          git switch -c "$branch_name"
+          bump_branch_name="bump-version/$NEW_VERSION_APP"
+          echo "bump_branch_name=$bump_branch_name" >> $GITHUB_OUTPUT
+          git switch -c "$bump_branch_name"
           git add .
 
           if [[ ! -z "$GITHUB_ACTIONS" ]]; then
@@ -96,5 +98,26 @@ jobs:
           fi
 
           eval "$commit_command"
-          git push origin "$branch_name" --force
+          git push origin "$bump_branch_name" --force
+
+      - name: Create Bump Version PR
+        if: ${{ steps.commit-version-app.outputs.bump_branch_name && steps.bump-version.outputs.new_version_app }}
+        env:
+          NEW_VERSION_APP: ${{ steps.bump-version.outputs.new_version_app }}
+          BUMP_BRANCH_VERSION: ${{ steps.commit-version-app.outputs.bump_branch_name }}
+        uses: actions/github-script@v6
+        with:
+          script:  |
+            const prTitle = 'chore: bump app version';
+            const prBody = '> This PR was created by **${{ github.workflow }}** workflow.';
+
+            const resp = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: "${{ env.BUMP_BRANCH_VERSION }}",
+              base: "${{ github.event.repository.default_branch }}",
+              title: prTitle,
+              body: prBody
+            });
+            return resp.data.number;
 
