@@ -1,14 +1,25 @@
-async function createGitHubIssue() {
-  const issueTitle = 'Testing'
+class CustomGitHubException extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "CustomGitHubException"
+    this.response = {
+      data: {
+        message: 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.'
+      }
+    }
+  }
+}
+
+async function createGitHubIssue({ predicate }) {
+  const issueTitle = 'Testing #02'
   const issueBody = '### Title test';
 
   const duplicate_issue_request =
     await github.rest.search.issuesAndPullRequests({
       q: `repo:${{ github.repository }} is:issue is:open in:title ${issueTitle}`,
     });
-  const issue_exists = duplicate_issue_request.data.total_count > 0;
-  if (issue_exists) {
-    console.log(`There's already an issue for \"${issueTitle}\"`);
+  if (predicate) {
+    throw new CustomGitHubException(`There's already an issue for \"${issueTitle}\"`);
   } else {
     github.rest.issues.create({
       owner: context.repo.owner,
@@ -19,14 +30,13 @@ async function createGitHubIssue() {
   }
 }
 
-(async function() {
-  try {
-    await createGitHubIssue()
-  } catch (error) {
-    if (error.code && error.code === "403") {
-      await createGitHubIssue()
-    } else {
-      console.log({ error })
-    }
+try {
+  await createGitHubIssue({ predicate: true })
+} catch (error) {
+  if (error?.response?.data?.message === 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.') {
+    await createGitHubIssue({ predicate: false })
+    return
   }
-})()
+
+  throw error
+}
