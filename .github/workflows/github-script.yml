@@ -13,13 +13,15 @@ jobs:
       - name: Github script
         uses: actions/github-script@v6
         with:
-          retry-exempt-status-codes: 500
-          retries: 3
           script: |
-            try {
+            function handle() {
               throw new Error("Try custom exception")
-            } catch(e) {
-              console.log({ e })
             }
 
-            throw new Error("Custom exception")
+            try {
+              console.log('Try')
+              handle()
+            } catch(e) {
+              console.log('Catch')
+              handle()
+            }
