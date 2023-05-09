@@ -25,7 +25,7 @@ jobs:
                 });
               const issue_exists = duplicate_issue_request.data.total_count > 0;
               if (issue_exists) {
-                console.log(`There's already an issue for \"${issueTitle}\"`);
+                throw new Error(`There's already an issue for \"${issueTitle}\"`);
               } else {
                 github.rest.issues.create({
                   owner: context.repo.owner,
@@ -39,9 +39,17 @@ jobs:
             try {
               await createGitHubIssue()
             } catch (error) {
-              if (error.code && error.code === "403") {
+              const { 
+                response: {
+                  data: {
+                    message
+                  }
+                } 
+              } = error
+
+              if (message === 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.') {
                 await createGitHubIssue()
               } else {
-                console.log({ error })
+                console.log(error)
               }
             }
