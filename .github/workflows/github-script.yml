@@ -16,9 +16,9 @@ jobs:
           retries: 3
           script: |
             try {
-              throw new Exception("Try custom exception")
+              throw new Error("Try custom exception")
             } catch(e) {
               console.log({ e })
             }
 
-            throw new Exception("Custom exception")
+            throw new Error("Custom exception")
