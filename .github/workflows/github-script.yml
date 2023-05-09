@@ -41,7 +41,8 @@ jobs:
             } catch (error) {
               if (error?.response?.data?.message === 'You have exceeded a secondary rate limit. Please wait a few minutes before you try again.') {
                 await createGitHubIssue()
-              } else {
-                console.log(error)
+                return
               }
+
+              throw error
             }
