@@ -13,6 +13,7 @@ jobs:
       - name: Github script
         uses: actions/github-script@v6
         with:
+          retry-exempt-status-codes: 500
           retries: 3
           script: |
             try {
