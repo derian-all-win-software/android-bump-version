@@ -1,0 +1,24 @@
+name: Github script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  github-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Github script
+        uses: actions/github-script@v6
+        with:
+          retries: 3
+          script: |
+            try {
+              throw new Exception("Try custom exception")
+            } catch(e) {
+              console.log({ e })
+            }
+
+            throw new Exception("Custom exception")
