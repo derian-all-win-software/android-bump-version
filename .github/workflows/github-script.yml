@@ -41,7 +41,7 @@ jobs:
                   title: issueTitle,
                   body: issueBody,
                 });
-                console.log("Issue created successfully") 
+                console.log(`${issueTitle} issue created successfully`);
               }
             }
             
