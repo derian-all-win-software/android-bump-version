@@ -2,6 +2,10 @@ name: Github script
 
 on:
   workflow_dispatch:
+    inputs:
+      issue_title:
+        type: string
+        default: Issue title
 
 jobs:
   github-script:
@@ -16,12 +20,12 @@ jobs:
           github-token: ${{ secrets.TOKEN }}
           script: |
             const seconds = 90;
-            const timeout = seconds * 1000;
+            const timeout = 0;
             const maxAttempts = 3;
             let attempts = 1;
             
             async function createGitHubIssue() {
-              const issueTitle = "Testing #02";
+              const issueTitle = "${{ github.event.inputs.issue_title }}";
               const issueBody = "### Title test";
             
               const duplicateIssueRequest = await github.rest.search.issuesAndPullRequests({
@@ -58,9 +62,10 @@ jobs:
                   }
             
                   attempts++;
+                  timeout != 90 && (timeout += 90)
                   handleGitHubIssue();
                 });
-              }, timeout)
+              }, timeout * 1000)
             }
             
             handleGitHubIssue();
